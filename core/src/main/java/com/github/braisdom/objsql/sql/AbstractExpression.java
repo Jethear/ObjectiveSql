@@ -29,6 +29,7 @@ public abstract class AbstractExpression implements Expression {
         return this;
     }
 
+    @Override
     public String getAlias() {
         return alias;
     }
@@ -86,6 +87,11 @@ public abstract class AbstractExpression implements Expression {
     @Override
     public LogicalExpression ne(Expression expression) {
         return new PolynaryExpression(PolynaryExpression.NE, this, expression);
+    }
+
+    @Override
+    public LogicalExpression ne2(Expression expr) {
+        return new PolynaryExpression(PolynaryExpression.NE2, this, expr);
     }
 
     protected void setAlias(String alias) {

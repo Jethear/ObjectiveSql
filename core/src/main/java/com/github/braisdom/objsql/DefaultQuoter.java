@@ -13,22 +13,22 @@ import static com.github.braisdom.objsql.DatabaseType.*;
 public class DefaultQuoter implements Quoter {
 
     @Override
-    public String quoteTableName(DatabaseMetaData databaseMetaData, String tableName) throws SQLException {
+    public String quoteTableName(String databaseName, String tableName) {
         String[] tableNameItems = tableName.split("\\.");
         String[] quotedTableNames = Arrays.stream(tableNameItems).map(FunctionWithThrowable
-                .castFunctionWithThrowable(item -> quoteName(databaseMetaData, item))).toArray(String[]::new);
+                .castFunctionWithThrowable(item -> quoteName(databaseName, item))).toArray(String[]::new);
         return String.join(".", quotedTableNames);
     }
 
     @Override
-    public String quoteColumnName(DatabaseMetaData databaseMetaData, String columnName) throws SQLException {
-        return quoteName(databaseMetaData, columnName);
+    public String quoteColumnName(String databaseName, String columnName) {
+        return quoteName(databaseName, columnName);
     }
 
     @Override
-    public String[] quoteColumnNames(DatabaseMetaData databaseMetaData, String[] columnNames) throws SQLException {
+    public String[] quoteColumnNames(String databaseName, String[] columnNames) {
         String[] quotedColumnNames = Arrays.stream(columnNames).map(FunctionWithThrowable
-                .castFunctionWithThrowable(column -> quoteName(databaseMetaData, column))).toArray(String[]::new);
+                .castFunctionWithThrowable(column -> quoteName(databaseName, column))).toArray(String[]::new);
         return quotedColumnNames;
     }
 
@@ -46,14 +46,15 @@ public class DefaultQuoter implements Quoter {
     @Override
     public String quoteValue(Object value) {
         if (value instanceof Integer || value instanceof Long ||
-                value instanceof Float || value instanceof Double)
+                value instanceof Float || value instanceof Double) {
             return String.valueOf(value);
-        else {
+        } else {
             String stringValue = String.valueOf(value);
             if (stringValue.startsWith(NO_QUOTE_PREFIX)) {
                 String[] stringValues = stringValue.split(":");
-                if(stringValues.length < 2)
+                if(stringValues.length < 2) {
                     throw new IllegalArgumentException("'%s' is invalid no quote value");
+                }
                 return String.join("",
                         Arrays.copyOfRange(stringValues, 1, stringValues.length));
             }
@@ -62,14 +63,14 @@ public class DefaultQuoter implements Quoter {
         return String.format("'%s'", value);
     }
 
-    private String quoteName(DatabaseMetaData databaseMetaData, String item) throws SQLException {
-        String databaseName = databaseMetaData.getDatabaseProductName();
-        if (MySQL.nameEquals(databaseName) || MariaDB.nameEquals(databaseName))
+    private String quoteName(String databaseName, String item) {
+        if (MySQL.nameEquals(databaseName) || MariaDB.nameEquals(databaseName)) {
             return String.format("`%s`", item);
-        else if (PostgreSQL.nameEquals(databaseName) || SQLite.nameEquals(databaseName))
+        } else if (PostgreSQL.nameEquals(databaseName) || SQLite.nameEquals(databaseName)) {
             return String.format("\"%s\"", item);
-        else if (Oracle.nameEquals(databaseName))
+        } else if (Oracle.nameEquals(databaseName)) {
             return String.format("\"%s\"", item.toUpperCase());
+        }
         return String.format("\"%s\"", item);
     }
 }

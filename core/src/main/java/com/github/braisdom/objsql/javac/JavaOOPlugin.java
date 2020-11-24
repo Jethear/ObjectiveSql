@@ -1,15 +1,34 @@
+/*
+ * Copyright (C) 2009-2013 The Project Lombok Authors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package com.github.braisdom.objsql.javac;
 
 import com.github.braisdom.objsql.apt.APTBuilder;
 import com.sun.source.tree.ExpressionTree;
 import com.sun.source.tree.MethodInvocationTree;
+import com.sun.source.tree.ReturnTree;
 import com.sun.source.tree.VariableTree;
 import com.sun.source.util.*;
 import com.sun.tools.javac.api.BasicJavacTask;
-import com.sun.tools.javac.tree.JCTree.JCBinary;
-import com.sun.tools.javac.tree.JCTree.JCExpression;
-import com.sun.tools.javac.tree.JCTree.JCMethodInvocation;
-import com.sun.tools.javac.tree.JCTree.JCVariableDecl;
+import com.sun.tools.javac.tree.JCTree.*;
 import com.sun.tools.javac.tree.TreeMaker;
 import com.sun.tools.javac.util.Context;
 import com.sun.tools.javac.util.List;
@@ -17,19 +36,10 @@ import com.sun.tools.javac.util.ListBuffer;
 import com.sun.tools.javac.util.Names;
 import org.mangosdk.spi.ProviderFor;
 
-import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Set;
-
 @ProviderFor(Plugin.class)
 public class JavaOOPlugin implements Plugin {
 
     public static final String NAME = "JavaOO";
-
-    private static Set<String> TARGET_TYPES = new HashSet<>(Arrays.asList(
-            // Use only primitive types for simplicity
-            byte.class.getName(), short.class.getName(), char.class.getName(),
-            int.class.getName(), long.class.getName(), float.class.getName(), double.class.getName()));
 
     @Override
     public String getName() {
@@ -60,12 +70,30 @@ public class JavaOOPlugin implements Plugin {
                             @Override
                             public Void visitVariable(VariableTree node, Void unused) {
                                 JCVariableDecl variableDecl = (JCVariableDecl) node;
-                                if (variableDecl.init instanceof JCBinary) {
-                                    JCExpression expression = JCBinarys.createOperatorExpr(aptBuilder,
-                                            (JCBinary) variableDecl.init);
-                                    variableDecl.init = expression;
+                                if (variableDecl.init != null && variableDecl.init instanceof JCBinary) {
+                                    JCBinary jcBinary = (JCBinary)variableDecl.init;
+                                    if(!isEqOrNe(jcBinary.getTag())) {
+                                        JCExpression expression = JCBinarys.createOperatorExpr(aptBuilder,
+                                                jcBinary);
+                                        variableDecl.init = expression;
+                                    }
                                 }
+
                                 return super.visitVariable(node, unused);
+                            }
+
+                            @Override
+                            public Void visitReturn(ReturnTree node, Void unused) {
+                                JCReturn jcReturn = (JCReturn) node;
+                                if(jcReturn.expr instanceof JCBinary) {
+                                    JCBinary jcBinary = (JCBinary)jcReturn.expr;
+                                    if(!isEqOrNe(jcBinary.getTag())) {
+                                        JCExpression expression = JCBinarys.createOperatorExpr(aptBuilder,
+                                                jcBinary);
+                                        jcReturn.expr = expression;
+                                    }
+                                }
+                                return super.visitReturn(node, unused);
                             }
 
                             @Override
@@ -74,11 +102,17 @@ public class JavaOOPlugin implements Plugin {
                                 List<JCExpression> args = (List<JCExpression>) node.getArguments();
                                 for (ExpressionTree arg : args) {
                                     if (arg instanceof JCBinary) {
-                                        JCExpression expression = JCBinarys.createOperatorExpr(aptBuilder,
-                                                (JCBinary) arg);
-                                        newArgs = newArgs.append(expression);
-                                    } else
+                                        JCBinary jcBinary = (JCBinary)arg;
+                                        if(!isEqOrNe(jcBinary.getTag())) {
+                                            JCExpression expression = JCBinarys.createOperatorExpr(aptBuilder,
+                                                    jcBinary);
+                                            newArgs = newArgs.append(expression);
+                                        }else {
+                                            newArgs = newArgs.append((JCExpression) arg);
+                                        }
+                                    } else {
                                         newArgs = newArgs.append((JCExpression) arg);
+                                    }
                                 }
 
                                 JCMethodInvocation methodInvocation = (JCMethodInvocation) node;
@@ -89,5 +123,9 @@ public class JavaOOPlugin implements Plugin {
                         }, null);
             }
         });
+    }
+
+    public boolean isEqOrNe(Tag tag) {
+        return tag.equals(Tag.EQ) || tag.equals(Tag.NE);
     }
 }

@@ -23,6 +23,8 @@ import java.sql.DatabaseMetaData;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Timestamp;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
 
 import static com.github.braisdom.objsql.DatabaseType.*;
 
@@ -35,15 +37,19 @@ public class SqlDateTimeTransition<T> implements ColumnTransition<T> {
         if (fieldValue != null && fieldValue.getValue() != null) {
             if (SQLite.nameEquals(databaseName)) {
                 return fieldValue;
-            } else if(Oracle.nameEquals(databaseName)) {
+            } else if (Oracle.nameEquals(databaseName)) {
                 return fieldValue;
-            }else if (PostgreSQL.nameEquals(databaseName)) {
+            } else if (PostgreSQL.nameEquals(databaseName)) {
                 if (fieldValue.getValue() instanceof Timestamp) {
-                    fieldValue.setValue(fieldValue.getValue().toString());
-                    return fieldValue;
+                    return fieldValue.getValue();
+                } else if (fieldValue.getValue() instanceof Long) {
+                    return Timestamp.from(Instant.ofEpochMilli((Long) fieldValue.getValue()));
+                } else {
+                    return Timestamp.valueOf(String.valueOf(fieldValue.getValue()));
                 }
+            } else {
                 return fieldValue;
-            } else return fieldValue;
+            }
         }
         return null;
     }
@@ -52,10 +58,18 @@ public class SqlDateTimeTransition<T> implements ColumnTransition<T> {
     public Object rising(DatabaseMetaData databaseMetaData, ResultSetMetaData resultSetMetaData,
                          T object, TableRowAdapter tableRowDescriptor, String columnName, Object columnValue) throws SQLException {
         String databaseName = databaseMetaData.getDatabaseProductName();
-        if (columnValue != null) {
-            if (SQLite.nameEquals(databaseName)) {
-                return Timestamp.valueOf(String.valueOf(columnValue));
-            } else return columnValue;
+        try {
+            if (columnValue != null) {
+                if (SQLite.nameEquals(databaseName)) {
+                    return Timestamp.from(Instant.ofEpochMilli(Long.valueOf(String.valueOf(columnValue))));
+                } else {
+                    return columnValue;
+                }
+            }
+        } catch (DateTimeParseException ex) {
+            String message = String.format("Invalid raw DataTime of '%s' from database: %s",
+                    columnName, columnValue);
+            throw new IllegalArgumentException(message, ex);
         }
         return null;
     }

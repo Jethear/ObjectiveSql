@@ -42,13 +42,15 @@ public class DefaultQuery<T> extends AbstractQuery<T> {
         Quoter quoter = Databases.getQuoter();
         String dataSourceName = Tables.getDataSourceName(domainModelDescriptor.getDomainModelClass());
         return Databases.execute(dataSourceName, (connection, sqlExecutor) -> {
-            String tableName = quoter.quoteTableName(connection.getMetaData(), domainModelDescriptor.getTableName());
+            String databaseName = connection.getMetaData().getDatabaseProductName();
+            String tableName = quoter.quoteTableName(databaseName, domainModelDescriptor.getTableName());
             String sql = createQuerySQL(tableName, projection, filter, groupBy,
                     having, orderBy, offset, limit);
             List rows = sqlExecutor.query(connection, sql, domainModelDescriptor, params);
 
-            if (relationships.length > 0 && rows.size() > 0)
+            if (relationships.length > 0 && rows.size() > 0) {
                 new RelationshipNetwork(connection, domainModelDescriptor).process(rows, relationships);
+            }
 
             return rows;
         });
@@ -57,8 +59,9 @@ public class DefaultQuery<T> extends AbstractQuery<T> {
     @Override
     public T queryFirst(Relationship... relationships) throws SQLException {
         List<T> results = execute(relationships);
-        if (results.size() > 0)
+        if (results.size() > 0) {
             return results.get(0);
+        }
         return null;
     }
 
@@ -73,23 +76,29 @@ public class DefaultQuery<T> extends AbstractQuery<T> {
 
         sql.append(standardSql);
 
-        if (!StringUtil.isBlank(filter))
+        if (!StringUtil.isBlank(filter)) {
             sql.append(" WHERE ").append(filter);
+        }
 
-        if (!StringUtil.isBlank(groupBy))
+        if (!StringUtil.isBlank(groupBy)) {
             sql.append(" GROUP BY ").append(groupBy);
+        }
 
-        if (!StringUtil.isBlank(having))
+        if (!StringUtil.isBlank(having)) {
             sql.append(" HAVING ").append(having);
+        }
 
-        if (!StringUtil.isBlank(orderBy))
+        if (!StringUtil.isBlank(orderBy)) {
             sql.append(" ORDER BY ").append(orderBy);
+        }
 
-        if (offset > 0)
+        if (offset > 0) {
             sql.append(" OFFSET ").append(offset);
+        }
 
-        if (limit > 0)
+        if (limit > 0) {
             sql.append(" LIMIT ").append(limit);
+        }
 
         return sql.toString();
     }

@@ -1,3 +1,24 @@
+/*
+ * Copyright (C) 2009-2013 The Project Lombok Authors.
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+ * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+ * THE SOFTWARE.
+ */
 package com.github.braisdom.objsql.javac;
 
 import com.github.braisdom.objsql.apt.APTBuilder;
@@ -23,7 +44,11 @@ public class JCBinarys {
     private static final String OPERATOR_GT = "GT";
     private static final String OPERATOR_GE = "GE";
 
-    // ==================== for Integer PLUS operation =============
+    // ==================== for PLUS operation =============
+    public static String plus(String lhs, Object rhs) {
+        return lhs + rhs;
+    }
+
     public static int plus(int lhs, int rhs) {
         return lhs + rhs;
     }
@@ -85,6 +110,14 @@ public class JCBinarys {
     }
 
     public static double plus(double lhs, double rhs) {
+        return lhs + rhs;
+    }
+
+    public static double plus(double lhs, float rhs) {
+        return lhs + rhs;
+    }
+
+    public static double plus(float lhs, double rhs) {
         return lhs + rhs;
     }
 
@@ -202,6 +235,14 @@ public class JCBinarys {
     }
 
     public static double minus(double lhs, double rhs) {
+        return (float) (lhs - rhs);
+    }
+
+    public static double minus(double lhs, float rhs) {
+        return lhs - rhs;
+    }
+
+    public static double minus(float lhs, double rhs) {
         return lhs - rhs;
     }
 
@@ -322,6 +363,14 @@ public class JCBinarys {
         return lhs * rhs;
     }
 
+    public static double times(float lhs, double rhs) {
+        return lhs * rhs;
+    }
+
+    public static double times(double lhs, float rhs) {
+        return lhs * rhs;
+    }
+
     public static Expression times(Expression lhs, Expression rhs) {
         return lhs.times(rhs);
     }
@@ -436,6 +485,14 @@ public class JCBinarys {
     }
 
     public static double div(double lhs, double rhs) {
+        return lhs / rhs;
+    }
+
+    public static double div(float lhs, double rhs) {
+        return lhs / rhs;
+    }
+
+    public static double div(double lhs, float rhs) {
         return lhs / rhs;
     }
 
@@ -556,6 +613,14 @@ public class JCBinarys {
         return lhs % rhs;
     }
 
+    public static double rem(float lhs, double rhs) {
+        return lhs % rhs;
+    }
+
+    public static double rem(double lhs, float rhs) {
+        return lhs % rhs;
+    }
+
     public static Expression rem(Expression lhs, Expression rhs) {
         return lhs.rem(rhs);
     }
@@ -670,6 +735,14 @@ public class JCBinarys {
     }
 
     public static boolean lt(double lhs, double rhs) {
+        return lhs < rhs;
+    }
+
+    public static boolean lt(float lhs, double rhs) {
+        return lhs < rhs;
+    }
+
+    public static boolean lt(double lhs, float rhs) {
         return lhs < rhs;
     }
 
@@ -1135,7 +1208,7 @@ public class JCBinarys {
                 JCExpression rhs2 = createOperatorExpr(aptBuilder, binary.getTag().name(), binary.lhs, binary.rhs);
                 return aptBuilder.staticMethodCall(JCBinarys.class, methodName, realLhs, rhs2);
             } else {
-                realLhs = expression;
+                realRhs = expression;
             }
         }
 

@@ -80,7 +80,9 @@ class DomainModelListHandler implements ResultSetHandler<List> {
     public List handle(ResultSet rs) throws SQLException {
         List results = new ArrayList();
 
-        if (!rs.next()) return results;
+        if (!rs.next()) {
+            return results;
+        }
 
         do {
             results.add(createBean(rs));
@@ -107,17 +109,20 @@ class DomainModelListHandler implements ResultSetHandler<List> {
 
                     Class fieldType = tableRowDescriptor.getFieldType(fieldName);
                     if (fieldType != null && value != null &&
-                            !fieldType.isAssignableFrom(value.getClass()))
+                            !fieldType.isAssignableFrom(value.getClass())) {
                         throw new ClassCastException(String.format("Inconsistent data types field:%s(%s) " +
                                         "vs column:%s(%s) in %s", fieldName, fieldType.getName(), columnName,
                                 value.getClass().getName(), bean.getClass().getName()));
+                    }
 
                     tableRowDescriptor.setFieldValue(bean, fieldName, value);
-                } else
+                } else {
                     tableRowDescriptor.setFieldValue(bean, fieldName, rawColumnValue);
+                }
             } else {
-                if (PropertyUtils.supportRawAttribute(bean))
+                if (PropertyUtils.supportRawAttribute(bean)) {
                     PropertyUtils.writeRawAttribute(bean, columnName, rawColumnValue);
+                }
             }
         }
 
@@ -145,14 +150,17 @@ class DomainModelHandler implements ResultSetHandler<Object> {
         int columnCount = metaData.getColumnCount();
 
         for (int i = 1; i <= columnCount; i++) {
-            if (!rs.next()) break;
+            if (!rs.next()) {
+                break;
+            }
 
             String columnName = metaData.getColumnLabel(i);
             String fieldName = tableRowDescriptor.getFieldName(columnName);
             Object rawColumnValue = rs.getObject(i);
 
             if (AUTO_GENERATE_COLUMN_NAMES.contains(columnName)) {
-                tableRowDescriptor.setGeneratedKey(bean, rawColumnValue);
+                tableRowDescriptor.setGeneratedKey(DatabaseType
+                        .createByName(databaseMetaData.getDatabaseProductName()), bean, rawColumnValue);
             } else {
                 if (fieldName != null) {
                     if (tableRowDescriptor.isTransitable(fieldName)) {
@@ -162,17 +170,20 @@ class DomainModelHandler implements ResultSetHandler<Object> {
 
                         Class fieldType = tableRowDescriptor.getFieldType(fieldName);
                         if (fieldType != null && value != null &&
-                                !fieldType.isAssignableFrom(value.getClass()))
+                                !fieldType.isAssignableFrom(value.getClass())) {
                             throw new ClassCastException(String.format("Inconsistent data types field:%s(%s) " +
                                             "vs column:%s(%s) in %s", fieldName, fieldType.getName(), columnName,
                                     value.getClass().getName(), bean.getClass().getName()));
+                        }
 
                         tableRowDescriptor.setFieldValue(bean, fieldName, value);
-                    } else
+                    } else {
                         tableRowDescriptor.setFieldValue(bean, fieldName, rawColumnValue);
+                    }
                 } else {
-                    if (PropertyUtils.supportRawAttribute(bean))
+                    if (PropertyUtils.supportRawAttribute(bean)) {
                         PropertyUtils.writeRawAttribute(bean, columnName, rawColumnValue);
+                    }
                 }
             }
         }
